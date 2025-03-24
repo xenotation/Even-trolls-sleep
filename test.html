@@ -37,89 +37,51 @@
     </style>
 
     <script>
-        // Helper: Convert a Telegram date string "26.04.2023 18:09:34 UTC+02:00" into an ISO date string.
-        function parseTelegramDate(dateStr) {
-          dateStr = dateStr.replace("UTC", "").trim();
-          const parts = dateStr.split(" ");
-          if (parts.length < 3) return new Date(dateStr);
-          const dateParts = parts[0].split(".");
-          const isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-          return new Date(`${isoDate}T${parts[1]}${parts[2]}`);
-        }
-        
         /**
-         * Schedules the fading-in of each Telegram message. Ensures:
-         *  1) Minimum 10 seconds per message.
-         *  2) Once the last message is revealed, the process restarts from the beginning.
+         * Schedules the fading-in of each Telegram message with a fixed, hardcoded
+         * 2-minute delay between each one. Once the last message is revealed, the
+         * process restarts.
          */
-        function scheduleMessages(messages, scale) {
+        function scheduleMessages(messages) {
           // Hide all messages before scheduling them again
           messages.forEach((msg) => {
             msg.style.opacity = 0;
             msg.style.transition = "opacity 0.5s ease-in";
           });
-        
-          // Find the first dated message to determine our baseline (firstTime)
-          const firstMsg = messages.find((msg) => {
-            const dateEl = msg.querySelector(".date.details");
-            return dateEl && dateEl.getAttribute("title");
-          });
-        
-          // If we can't find a dated message, just show them all immediately and stop
-          if (!firstMsg) {
-            messages.forEach((msg) => {
-              msg.style.opacity = 1;
-            });
-            return;
-          }
-        
-          // Our baseline: the timestamp of the first message with a date
-          const firstTime = parseTelegramDate(
-            firstMsg.querySelector(".date.details").getAttribute("title")
-          ).getTime();
-        
-          let maxDelay = 0; // Track the largest delay so we know when the last message is revealed
-        
+    
+          const twoMinutes = 0.5 * 60 * 500; // 2 minutes in milliseconds
+          let currentDelay = 0;
+          let maxDelay = 0;
+    
+          // Schedule each message to appear 2 minutes after the previous one
           messages.forEach((msg) => {
-            const dateEl = msg.querySelector(".date.details");
-            // If a message doesn't have a date (e.g., "service" messages), show it immediately
-            if (!dateEl) {
-              msg.style.opacity = 1;
-              return;
-            }
-        
-            const msgTime = parseTelegramDate(dateEl.getAttribute("title")).getTime();
-            
-            // Calculate scaled delay, but enforce at least 10 seconds
-            const delay = Math.max(10000, (msgTime - firstTime) * scale);
-        
-            // Update maxDelay so we know when the final message will be revealed
-            if (delay > maxDelay) {
-              maxDelay = delay;
-            }
-        
-            // Schedule the fade-in
             setTimeout(() => {
               msg.style.opacity = 1;
               // Scroll to the newly revealed message
               msg.scrollIntoView({ behavior: "smooth", block: "end" });
-            }, delay);
+            }, currentDelay);
+    
+            if (currentDelay > maxDelay) {
+              maxDelay = currentDelay;
+            }
+            // Increment the delay by 2 minutes for the next message
+            currentDelay += twoMinutes;
           });
-        
-          // After the last message has been shown (maxDelay), wait a little more (e.g., 10s),
-          // then start from the first again (i.e., call scheduleMessages again).
+    
+          // After the last message has been shown, wait a little more (e.g. 10s),
+          // then start over from the first again
           setTimeout(() => {
-            scheduleMessages(messages, scale);
-          }, maxDelay + 10000);
+            scheduleMessages(messages);
+          }, maxDelay + twoMinutes + 10000);
         }
-        
+    
         document.addEventListener("DOMContentLoaded", function () {
           const messages = Array.from(document.querySelectorAll(".message"));
-          // You can adjust 'scale' to speed up or slow down the relative timings
-          const scale = 0.1; 
-          scheduleMessages(messages, scale);
+          // Start scheduling with a fixed 2-minute interval
+          scheduleMessages(messages);
         });
-        </script>
+    </script>
+    
         
   </head>
 
