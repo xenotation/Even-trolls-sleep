@@ -37,91 +37,95 @@
     </style>
 
     <script>
-       // Convert a Telegram date string, e.g. "26.04.2023 18:09:34 UTC+02:00", into a Date object.
+       // 1) Convert a Telegram date string, e.g. "26.04.2023 18:09:34 UTC+02:00", into a Date object.
        function parseTelegramDate(dateStr) {
          dateStr = dateStr.replace("UTC", "").trim();
          const parts = dateStr.split(" ");
-         if (parts.length < 3) return new Date(dateStr);
- 
+         if (parts.length < 3) return new Date(dateStr); // fallback if unexpected
+     
          const dateParts = parts[0].split(".");
          const isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
          return new Date(`${isoDate}T${parts[1]}${parts[2]}`);
        }
- 
+     
+       // 2) Called on DOMContentLoaded; finds all messages, staggers their reveal, and throttles scrolling.
        function fadeInMessages() {
          const messages = Array.from(document.querySelectorAll(".message"));
- 
-         // Hide them all to start fresh
+         if (!messages.length) return;
+     
+         // Hide all messages initially
          messages.forEach((msg) => {
            msg.style.opacity = 0;
+           msg.style.transition = "opacity 0.5s ease-in";
          });
- 
-         // If there are no messages, nothing to do
-         if (!messages.length) return;
- 
-         // We want a "scaled" delay based on timestamps, plus a minimum 2s gap between reveals.
-         const MIN_DELAY_MS = 2000;       // 2 seconds between messages
-         const TIME_SCALE   = 0.1;        // scale factor for actual time differences
- 
-         // 1) Collect each message's timestamp (if it has one).
-         //    If there's no timestamp, we'll treat it as the same time as the previous message.
-         let messageTimes = [];
-         let lastValidTime = Date.now();  // fallback if there's no date at all
-         messages.forEach((msg, idx) => {
+     
+         // Parse timestamps, fallback to the last valid time if missing
+         let lastValidTime = Date.now();
+         const messageTimes = messages.map((msg) => {
            const dateEl = msg.querySelector(".date.details");
            if (dateEl) {
-             const t = parseTelegramDate(dateEl.getAttribute("title")).getTime();
-             if (!isNaN(t)) {
-               lastValidTime = t;
+             const parsed = parseTelegramDate(dateEl.getAttribute("title")).getTime();
+             if (!isNaN(parsed)) {
+               lastValidTime = parsed;
              }
            }
-           // Store the computed time (fallback to the last valid time if missing/invalid)
-           messageTimes[idx] = lastValidTime;
+           return lastValidTime;
          });
- 
-         // 2) Calculate staggered delays so each message appears at least 2s
-         //    after the previous one, plus any scaled difference in timestamps.
-         //    The first message can appear immediately (0ms).
-         let cumulativeDelay = 0;
+     
+         // We'll do 2s minimum gap between consecutive messages + a scaled difference from timestamps
+         const MIN_DELAY_MS = 2000;
+         const TIME_SCALE   = 0.1;
+     
          let prevTime = messageTimes[0];
- 
+         let cumulativeDelay = 0;
+     
+         // We'll keep a reference to a scroll timer to throttle repeated scrolls
+         let scrollTimer = null;
+     
+         // Helper to schedule a single scroll call (debounced)
+         function scheduleScrollToEnd() {
+           // Cancel any pending scroll
+           if (scrollTimer) clearTimeout(scrollTimer);
+     
+           // Wait a small delay to batch multiple triggers
+           scrollTimer = setTimeout(() => {
+             // Scroll the last message into view
+             messages[messages.length - 1].scrollIntoView({ behavior: "smooth", block: "end" });
+           }, 200);
+         }
+     
+         // Reveal messages in chronological order
          messages.forEach((msg, i) => {
            if (i === 0) {
-             // Show first message immediately
+             // Show the first message immediately
              setTimeout(() => {
                msg.style.opacity = 1;
+               scheduleScrollToEnd();
              }, 0);
            } else {
-             // Time difference from previous message
+             // Compute time gap from previous
              const dt = (messageTimes[i] - prevTime) * TIME_SCALE;
-             const scaledDiff = Math.max(0, dt);  // guard if negative
-             // Our final gap = 2s + scaledDiff
+             const scaledDiff = Math.max(0, dt); // if negative, treat as 0
              const gap = MIN_DELAY_MS + scaledDiff;
- 
-             // Increase cumulative delay by that gap
+     
+             // Increase cumulative by that gap
              cumulativeDelay += gap;
- 
-             // Fade in the message at that total time offset
+     
              setTimeout(() => {
                msg.style.opacity = 1;
+               // Throttled scroll
+               scheduleScrollToEnd();
              }, cumulativeDelay);
- 
-             // Update prevTime for next iteration
+     
              prevTime = messageTimes[i];
            }
          });
- 
-         // (Optional) Scroll to the last message after everything is shown
-         setTimeout(() => {
-           messages[messages.length - 1].scrollIntoView({
-             behavior: "smooth",
-             block: "end"
-           });
-         }, cumulativeDelay + 1000);
        }
- 
+     
+       // 3) Kick things off on page load
        document.addEventListener("DOMContentLoaded", fadeInMessages);
      </script>
+     
   </head>
 
   <body onload="CheckLocation();" style="margin:0;">
