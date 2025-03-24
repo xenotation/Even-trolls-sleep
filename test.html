@@ -29,12 +29,7 @@
         background: black;
         border-bottom: 1px solid #1c1917;
       }
-      img {
-        display: block;
-        width: 400px;
-        height: 300px;
-        object-fit: cover; /* or "contain", etc. */
-      }
+
       
 
       /* Adjust the messages container so its content doesn't hide under the header */
@@ -43,35 +38,66 @@
       }
     </style>
     <script>
-        function scheduleMessages(messages) {
-          // Hide all messages up front
+        // 2-minute delay in milliseconds
+        const TWO_MINUTES = 2 * 5 * 500;
+      
+        // Called after all images are loaded
+        function startMessageSchedule() {
+          // Collect message elements
+          const messages = Array.from(document.querySelectorAll(".message"));
+      
+          // Hide all messages initially
           messages.forEach((msg) => {
             msg.style.opacity = 0;
             msg.style.transition = "opacity 0.5s ease-in";
           });
       
-          // 2 minutes in milliseconds
-          const twoMinutes = 2 * 10 * 1000;
+          // Reveal them in sequence
           let currentDelay = 0;
-      
-          // Reveal each message on a 2-minute schedule
           messages.forEach((msg) => {
             setTimeout(() => {
               msg.style.opacity = 1;
               msg.scrollIntoView({ behavior: "smooth", block: "end" });
             }, currentDelay);
-      
-            currentDelay += twoMinutes;
+            currentDelay += TWO_MINUTES;
           });
-      
-          // No re-calling of scheduleMessages here, so it only runs once
         }
       
         document.addEventListener("DOMContentLoaded", function () {
-          const messages = Array.from(document.querySelectorAll(".message"));
-          scheduleMessages(messages);
+          const imgs = document.querySelectorAll("img");
+          let imagesToLoad = imgs.length;
+      
+          // If no images are on the page, just start immediately
+          if (imagesToLoad === 0) {
+            startMessageSchedule();
+            return;
+          }
+      
+          // Otherwise, wait for each image to finish
+          imgs.forEach((img) => {
+            // If already cached (complete), decrement immediately
+            if (img.complete) {
+              imagesToLoad--;
+              if (imagesToLoad <= 0) {
+                startMessageSchedule();
+              }
+            } else {
+              // On load or error, decrement
+              img.addEventListener("load", onImgFinish);
+              img.addEventListener("error", onImgFinish);
+            }
+          });
+      
+          // Called each time an image finishes loading or errors
+          function onImgFinish() {
+            imagesToLoad--;
+            if (imagesToLoad <= 0) {
+              startMessageSchedule();
+            }
+          }
         });
       </script>
+      
       
         
   </head>
