@@ -37,61 +37,90 @@
     </style>
 
     <script>
-// Helper: Convert a Telegram date string "26.04.2023 18:09:34 UTC+02:00" into an ISO date string.
-function parseTelegramDate(dateStr) {
-    dateStr = dateStr.replace("UTC", "").trim();
-    const parts = dateStr.split(" ");
-    if (parts.length < 3) return new Date(dateStr);
-    const dateParts = parts[0].split(".");
-    const isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-    return new Date(`${isoDate}T${parts[1]}${parts[2]}`);
-  }
-  
-  document.addEventListener("DOMContentLoaded", function () {
-    const messages = Array.from(document.querySelectorAll(".message"));
-  
-    // Hide all messages initially and set a fade-in transition.
-    messages.forEach((msg) => {
-      msg.style.opacity = 0;
-      msg.style.transition = "opacity 0.5s ease-in";
-    });
-  
-    // Use the first message with a date as the baseline for timing.
-    const firstMsg = messages.find((msg) => {
-      const dateEl = msg.querySelector(".date.details");
-      return dateEl && dateEl.getAttribute("title");
-    });
-  
-    if (!firstMsg) {
-      messages.forEach((msg) => {
-        msg.style.opacity = 1;
-      });
-      return;
-    }
-  
-    const firstTime = parseTelegramDate(
-      firstMsg.querySelector(".date.details").getAttribute("title")
-    ).getTime();
-    const scale = 0.1; // Adjust scale factor for delay timing if needed
-  
-    messages.forEach((msg) => {
-      const dateEl = msg.querySelector(".date.details");
-      if (!dateEl) {
-        // For messages without a date (e.g., service messages), show them immediately.
-        msg.style.opacity = 1;
-        return;
-      }
-      const msgTime = parseTelegramDate(dateEl.getAttribute("title")).getTime();
-      let delay = Math.max(0, (msgTime - firstTime) * scale);
-      setTimeout(() => {
-        msg.style.opacity = 1;
-        // As soon as this message is revealed, scroll it into view.
-        msg.scrollIntoView({ behavior: "smooth", block: "end" });
-      }, delay);
-    });
-  });
-  
-    </script>
+        // Helper: Convert a Telegram date string "26.04.2023 18:09:34 UTC+02:00" into an ISO date string.
+        function parseTelegramDate(dateStr) {
+          dateStr = dateStr.replace("UTC", "").trim();
+          const parts = dateStr.split(" ");
+          if (parts.length < 3) return new Date(dateStr);
+          const dateParts = parts[0].split(".");
+          const isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+          return new Date(`${isoDate}T${parts[1]}${parts[2]}`);
+        }
+        
+        /**
+         * Schedules the fading-in of each Telegram message. Ensures:
+         *  1) Minimum 10 seconds per message.
+         *  2) Once the last message is revealed, the process restarts from the beginning.
+         */
+        function scheduleMessages(messages, scale) {
+          // Hide all messages before scheduling them again
+          messages.forEach((msg) => {
+            msg.style.opacity = 0;
+            msg.style.transition = "opacity 0.5s ease-in";
+          });
+        
+          // Find the first dated message to determine our baseline (firstTime)
+          const firstMsg = messages.find((msg) => {
+            const dateEl = msg.querySelector(".date.details");
+            return dateEl && dateEl.getAttribute("title");
+          });
+        
+          // If we can't find a dated message, just show them all immediately and stop
+          if (!firstMsg) {
+            messages.forEach((msg) => {
+              msg.style.opacity = 1;
+            });
+            return;
+          }
+        
+          // Our baseline: the timestamp of the first message with a date
+          const firstTime = parseTelegramDate(
+            firstMsg.querySelector(".date.details").getAttribute("title")
+          ).getTime();
+        
+          let maxDelay = 0; // Track the largest delay so we know when the last message is revealed
+        
+          messages.forEach((msg) => {
+            const dateEl = msg.querySelector(".date.details");
+            // If a message doesn't have a date (e.g., "service" messages), show it immediately
+            if (!dateEl) {
+              msg.style.opacity = 1;
+              return;
+            }
+        
+            const msgTime = parseTelegramDate(dateEl.getAttribute("title")).getTime();
+            
+            // Calculate scaled delay, but enforce at least 10 seconds
+            const delay = Math.max(10000, (msgTime - firstTime) * scale);
+        
+            // Update maxDelay so we know when the final message will be revealed
+            if (delay > maxDelay) {
+              maxDelay = delay;
+            }
+        
+            // Schedule the fade-in
+            setTimeout(() => {
+              msg.style.opacity = 1;
+              // Scroll to the newly revealed message
+              msg.scrollIntoView({ behavior: "smooth", block: "end" });
+            }, delay);
+          });
+        
+          // After the last message has been shown (maxDelay), wait a little more (e.g., 10s),
+          // then start from the first again (i.e., call scheduleMessages again).
+          setTimeout(() => {
+            scheduleMessages(messages, scale);
+          }, maxDelay + 10000);
+        }
+        
+        document.addEventListener("DOMContentLoaded", function () {
+          const messages = Array.from(document.querySelectorAll(".message"));
+          // You can adjust 'scale' to speed up or slow down the relative timings
+          const scale = 0.1; 
+          scheduleMessages(messages, scale);
+        });
+        </script>
+        
   </head>
 
   
