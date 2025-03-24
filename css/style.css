@@ -81,8 +81,8 @@ pre {
 }
 .page_body {
     padding-top: 48px;
-    width: 40vw;
-    margin: 0 auto;
+
+    margin: 0 1rem;
 }
 .page_about {
     padding: 16px 16px;
