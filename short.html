@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Exported Data</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+
+    <style>
+      #rotate-container {
+        transform: rotate(-90deg) translate(-100%, 0);
+        transform-origin: top left;
+        width: 100vh;
+        height: 100vw;
+        overflow-x: auto;
+        overflow-y: hidden;
+        position: relative;
+      }
+      .page_header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 100; /* higher z-index to sit above other elements */
+        background: black;
+        border-bottom: 1px solid #1c1917;
+      }
+      .messages_container {
+        margin-top: 48px; /* adjust according to your header's height */
+      }
+    </style>
+
+    <script>
+      // Helper: Convert a Telegram date string "26.04.2023 18:09:34 UTC+02:00" into an ISO date string.
+      function parseTelegramDate(dateStr) {
+        dateStr = dateStr.replace("UTC", "").trim();
+        const parts = dateStr.split(" ");
+        if (parts.length < 3) return new Date(dateStr);
+        const dateParts = parts[0].split(".");
+        const isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+        return new Date(`${isoDate}T${parts[1]}${parts[2]}`);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        // Call our fade-in logic on page load
+        fadeInMessages();
+      });
+
+      function fadeInMessages() {
+        const messages = Array.from(document.querySelectorAll(".message"));
+
+        // First, hide all messages again (so that restarting actually resets them)
+        messages.forEach((msg) => {
+          msg.style.opacity = 0;
+          msg.style.transition = "opacity 0.5s ease-in";
+        });
+
+        // Find the first timestamped message to use as the baseline for delays
+        const firstMsg = messages.find((msg) => {
+          const dateEl = msg.querySelector(".date.details");
+          return dateEl && dateEl.getAttribute("title");
+        });
+
+        // If no messages have timestamps, just show them all and exit
+        if (!firstMsg) {
+          messages.forEach((msg) => {
+            msg.style.opacity = 1;
+          });
+          return;
+        }
+
+        const firstTime = parseTelegramDate(
+          firstMsg.querySelector(".date.details").getAttribute("title")
+        ).getTime();
+
+        // Scale factor for the delay between messages
+        const scale = 0.1;
+
+        let maxDelay = 0; // track the largest delay so we know when the last message finishes
+
+        messages.forEach((msg) => {
+          const dateEl = msg.querySelector(".date.details");
+
+          if (!dateEl) {
+            // For messages without a date, show them immediately
+            msg.style.opacity = 1;
+            return;
+          }
+
+          // Calculate how far this message's time is from the first
+          const msgTime = parseTelegramDate(dateEl.getAttribute("title")).getTime();
+          let delay = Math.max(0, (msgTime - firstTime) * scale);
+          maxDelay = Math.max(maxDelay, delay);
+
+          setTimeout(() => {
+            msg.style.opacity = 1;
+            // Scroll each message into view as it appears
+            msg.scrollIntoView({ behavior: "smooth", block: "end" });
+          }, delay);
+        });
+
+        // Once the final message is shown, wait a bit and restart
+        // Increase 2000 (2 seconds) if you want a longer pause before restarting.
+        setTimeout(() => {
+          fadeInMessages();
+        }, maxDelay + 2000);
+      }
+    </script>
+  </head>
+
+  <body style="margin:0;">
+    <div id="rotate-container">
+      <div class="page_header">
+        <div class="content">
+          <div class="text bold">Фондация Руски Трол🐵</div>
+        </div>
+      </div>
+
+      <div class="page_body chat_page">
+        <div class="history">
+          <!-- Example messages -->
+          <div class="message service" id="message-1">
+            <div class="body details">
+              26 April 2023
+            </div>
+          </div>
+
+          <div class="message service" id="message522267">
+            <div class="body details">
+              Agent23 joined group by link from Group
+            </div>
+          </div>
+
+          <div class="message default clearfix" id="message522268">
+            <div class="pull_left userpic_wrap">
+              <div class="userpic userpic1" style="width: 42px; height: 42px">
+                <div class="initials" style="line-height: 42px"></div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="pull_right date details" title="26.04.2023 18:09:34 UTC+02:00">18:09</div>
+              <div class="from_name">Deleted Account</div>
+              <div class="reply_to details">
+                In reply to <a href="#go_to_message522260" onclick="return GoToMessage(522260)">this message</a>
+              </div>
+              <div class="media_wrap clearfix">
+                <div class="media clearfix pull_left media_photo">
+                  <div class="fill pull_left"></div>
+                  <div class="body">
+                    <div class="title bold">Sticker</div>
+                    <div class="description">
+                      Not included, change data exporting settings to download.
+                    </div>
+                    <div class="status details">😱, 11.6 KB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="message default clearfix" id="message522269">
+            <div class="pull_left userpic_wrap">
+              <div class="userpic userpic8" style="width: 42px; height: 42px">
+                <div class="initials" style="line-height: 42px">H</div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="pull_right date details" title="26.04.2023 18:12:46 UTC+02:00">18:12</div>
+              <div class="from_name">HopeIsLost</div>
+              <div class="reply_to details">
+                In reply to <a href="#go_to_message522265" onclick="return GoToMessage(522265)">this message</a>
+              </div>
+              <div class="media_wrap clearfix">
+                <div class="media clearfix pull_left media_photo">
+                  <div class="fill pull_left"></div>
+                  <div class="body">
+                    <div class="title bold">Sticker</div>
+                    <div class="description">
+                      Not included, change data exporting settings to download.
+                    </div>
+                    <div class="status details">🙏, 74.5 KB</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- End of example messages -->
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
