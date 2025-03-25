@@ -32,7 +32,8 @@
     </style>
     <script>
         /* ---------------------------------------------
-           #1, #2, #3, #4 Implementation (no #5)
+           Combined script with #1, #2, #3, and #4,
+           ensuring last message is fully visible.
         ---------------------------------------------- */
         
         // (A) Reload page after a long delay (unchanged from your code)
@@ -44,13 +45,22 @@
           }, ONE_MINUTE);
         });
         
-        // (B) Reveal messages one by one without "smooth" scrolling (#2)
-        //    and use explicit horizontal scroll (#1).
+        // (B) We'll reveal messages one by one and
+        //     explicitly scroll to the right edge so
+        //     the last message is never cut off.
         const TWO_MINUTES = 2 * 12 * 500;
         
+        /** Scroll to the far-right edge so the last message is fully visible */
+        function scrollToEnd() {
+          const container = document.getElementById("rotate-container");
+          if (!container) return;
+          // This ensures we don't overshoot so the last message isn't offscreen:
+          container.scrollLeft = container.scrollWidth - container.clientWidth;
+        }
+        
+        /** Reveal messages in sequence */
         function startMessageSchedule() {
           const messages = Array.from(document.querySelectorAll(".message"));
-          const container = document.getElementById("rotate-container");
         
           // Hide all messages initially
           messages.forEach((msg) => {
@@ -58,26 +68,24 @@
             msg.style.transition = "opacity 0.5s ease-in";
           });
         
-          // Reveal them in sequence
+          // Reveal them one by one
           let currentDelay = 0;
           messages.forEach((msg) => {
             setTimeout(() => {
               msg.style.opacity = 1;
+              // #1 & #2: No "smooth" scrolling; just manually jump right
+              scrollToEnd();
         
-              // #1: Manually scroll horizontally to the end
-              //     (No "smooth" for #2)
-              if (container) {
-                container.scrollLeft = container.scrollWidth;
-              }
-              // #3: If you ever do use scrollIntoView, do it like this:
-              // msg.scrollIntoView({ block: "nearest", inline: "end" });
-              // (But #1 is our main approach)
+              // #3 (Optional): If you still want to call scrollIntoView,
+              // you can do it with inline:'end', block:'nearest'. For example:
+              // msg.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
+              // But the scrollToEnd() approach above is usually more reliable on iPhone.
             }, currentDelay);
             currentDelay += TWO_MINUTES;
           });
         }
         
-        // (C) Wait for images, then start the reveal
+        // (C) Wait for images, then begin the reveal
         document.addEventListener("DOMContentLoaded", function () {
           const imgs = document.querySelectorAll("img");
           let imagesToLoad = imgs.length;
@@ -106,17 +114,15 @@
             }
           }
         
-          // (D) #4: On orientation change, re-scroll to the "end"
+          // (D) #4: On orientation change, re-scroll to the right edge
           window.addEventListener("orientationchange", () => {
             setTimeout(() => {
-              const container = document.getElementById("rotate-container");
-              if (container) {
-                container.scrollLeft = container.scrollWidth;
-              }
+              scrollToEnd();
             }, 50);
           });
         });
         </script>
+        
           
       
         
