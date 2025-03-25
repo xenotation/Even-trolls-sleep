@@ -31,67 +31,53 @@
       }
     </style>
     <script>
-        /**
-         * Approach #2: We remove native "smooth" from scrollIntoView and instead
-         * animate `scrollLeft` ourselves. This avoids iOS transform + smooth scroll bugs.
-         */
-        
-        // A) Reload after 20 hours (same as your code)
+        // (A) 20-hour auto-reload (same as your code)
         document.addEventListener("DOMContentLoaded", function () {
-          const ONE_MINUTE = 20 * 60 * 60 * 1000;
+          const TWENTY_HOURS = 20 * 60 * 60 * 1000;
           setTimeout(() => {
             window.location.reload();
-          }, ONE_MINUTE);
+          }, TWENTY_HOURS);
         });
         
-        // B) 2-minute delay
+        // (B) We'll reveal messages every 2 minutes
         const TWO_MINUTES = 2 * 12 * 500;
         
         /**
-         * Smoothly animate the container to the far right, so the newest message is visible.
-         */
-        function smoothScrollToEnd() {
-          const container = document.getElementById("rotate-container");
-          if (!container) return;
-        
-          // We'll scroll horizontally since you rotate -90deg
-          const start = container.scrollLeft;
-          const end = container.scrollWidth - container.clientWidth; // to right edge
-          const distance = end - start;
-          const duration = 400; // ms
-          const startTime = performance.now();
-        
-          function tick(now) {
-            const elapsed = now - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            container.scrollLeft = start + distance * progress;
-            if (progress < 1) {
-              requestAnimationFrame(tick);
-            }
-          }
-          requestAnimationFrame(tick);
-        }
-        
-        /**
-         * Reveal the message, then animate the container to the bottom (right edge).
+         * revealMessage:
+         * 1) Show the message (opacity = 1).
+         * 2) First scroll: immediate (behavior: "auto") to set a baseline
+         * 3) Force reflow with getBoundingClientRect()
+         * 4) Second scroll: "smooth"
          */
         function revealMessage(msg) {
-          msg.style.opacity = 1;
-          smoothScrollToEnd(); // no scrollIntoView
+          msg.style.opacity = 1; // fade in (CSS .5s transition)
+        
+          // First call: jump immediately to the new message
+          msg.scrollIntoView({ behavior: "auto", block: "end" });
+        
+          // Force Safari to recalc
+          msg.getBoundingClientRect();
+        
+          // Next animation frame => do final smooth scroll
+          requestAnimationFrame(() => {
+            msg.scrollIntoView({ behavior: "smooth", block: "end" });
+          });
         }
         
         /**
-         * Reveal all messages in 2-minute increments
+         * startMessageSchedule:
+         * Hides messages, then reveals them in 2-min increments
          */
         function startMessageSchedule() {
           const messages = Array.from(document.querySelectorAll(".message"));
         
-          // Hide all messages initially
+          // Hide them all initially
           messages.forEach((m) => {
             m.style.opacity = 0;
-            m.style.transition = "opacity 0.5s ease-in";
+            m.style.transition = "opacity 0.5s ease-in"; // your fade
           });
         
+          // Reveal each in a loop
           let currentDelay = 0;
           messages.forEach((msg) => {
             setTimeout(() => {
@@ -101,7 +87,7 @@
           });
         }
         
-        // C) Wait for images to load, then reveal messages
+        // (C) Wait for all images, then run startMessageSchedule()
         document.addEventListener("DOMContentLoaded", function () {
           const imgs = document.querySelectorAll("img");
           let imagesToLoad = imgs.length;
@@ -131,6 +117,7 @@
           }
         });
         </script>
+        
         
             
         
