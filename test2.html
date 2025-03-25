@@ -31,59 +31,70 @@
       }
     </style>
     <script>
-        // 2-minute delay in milliseconds
+        /**
+         * Approach #1: Wait 2 animation frames before calling scrollIntoView({behavior: "smooth"}).
+         * This helps iOS Safari recalculate layout and prevents that jump to the top.
+         */
+        
+        // A) Page reload after a long delay (same as your code)
+        document.addEventListener("DOMContentLoaded", function () {
+          const ONE_MINUTE = 20 * 60 * 60 * 1000; // 20 hours
+          setTimeout(() => {
+            window.location.reload();
+          }, ONE_MINUTE);
+        });
+        
+        // B) Time between each message reveal (2 minutes = 2 * 12 * 500)
         const TWO_MINUTES = 2 * 12 * 500;
         
-        // Called after all images are loaded
+        /**
+         * Reveal a single message, then wait 2 frames before scrolling smoothly.
+         */
+        function revealMessage(msg) {
+          // Make the message visible
+          msg.style.opacity = 1;
+        
+          // Let the browser run layout for 2 frames before we scroll
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              msg.scrollIntoView({ behavior: "smooth", block: "end" });
+            });
+          });
+        }
+        
+        /**
+         * Reveal all messages in sequence, each 2 minutes apart.
+         */
         function startMessageSchedule() {
-          // Collect message elements
           const messages = Array.from(document.querySelectorAll(".message"));
         
           // Hide all messages initially
-          messages.forEach((msg) => {
-            msg.style.opacity = 0;
-            msg.style.transition = "opacity 0.5s ease-in";
+          messages.forEach((m) => {
+            m.style.opacity = 0;
+            m.style.transition = "opacity 0.5s ease-in";
           });
         
-          // Reveal them in sequence
           let currentDelay = 0;
           messages.forEach((msg) => {
             setTimeout(() => {
-              // Fade in the message
-              msg.style.opacity = 1;
-        
-              // First scroll attempt
-              msg.scrollIntoView({ behavior: "smooth", block: "end" });
-        
-              // Force reflow so Safari re-checks layout
-              msg.getBoundingClientRect();
-        
-              // Second scroll attempt after short delay
-              setTimeout(() => {
-                msg.scrollIntoView({ behavior: "smooth", block: "end" });
-              }, 50);
-        
+              revealMessage(msg);
             }, currentDelay);
             currentDelay += TWO_MINUTES;
           });
         }
         
+        // C) Wait until all images have loaded, then begin the reveal
         document.addEventListener("DOMContentLoaded", function () {
-          // If you want the 20-hour reload, keep that:
-          const ONE_MINUTE = 20 * 60 * 60 * 1000;
-          setTimeout(() => {
-            window.location.reload();
-          }, ONE_MINUTE);
-        
-          // Wait for images to load, then start
           const imgs = document.querySelectorAll("img");
           let imagesToLoad = imgs.length;
         
+          // No images? Start immediately
           if (imagesToLoad === 0) {
             startMessageSchedule();
             return;
           }
         
+          // Otherwise, wait for each image to finish
           imgs.forEach((img) => {
             if (img.complete) {
               imagesToLoad--;
@@ -104,7 +115,7 @@
           }
         });
         </script>
-        
+            
         
           
       
