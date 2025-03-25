@@ -8,16 +8,20 @@ strong {
     font-weight: 700;
 }
 
-#rotate-container {
+#outer-scroll-container {
+    /* The real scroll container */
+    width: 100vw;    /* or desired width */
+    height: 100vh;   /* or desired height */
+    overflow-x: auto; /* or overflow: scroll */
+    -webkit-overflow-scrolling: touch; /* iOS momentum scroll */
+  }
+  
+  #rotate-container {
     transform: rotate(-90deg) translate(-100%, 0);
     transform-origin: top left;
-    width: 97vh;
-    height: 100vw;
-    overflow-x: auto;
-    overflow-y: hidden;
-    position: relative;
-    margin: 0 1rem;
+    /* No overflow here! Let the parent do the scrolling. */
   }
+  
   
   
 code, kbd, pre, samp {
