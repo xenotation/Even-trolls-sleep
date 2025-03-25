@@ -32,38 +32,56 @@
     </style>
     <script>
         /**
-         * Approach #1: Wait 2 animation frames before calling scrollIntoView({behavior: "smooth"}).
-         * This helps iOS Safari recalculate layout and prevents that jump to the top.
+         * Approach #2: We remove native "smooth" from scrollIntoView and instead
+         * animate `scrollLeft` ourselves. This avoids iOS transform + smooth scroll bugs.
          */
         
-        // A) Page reload after a long delay (same as your code)
+        // A) Reload after 20 hours (same as your code)
         document.addEventListener("DOMContentLoaded", function () {
-          const ONE_MINUTE = 20 * 60 * 60 * 1000; // 20 hours
+          const ONE_MINUTE = 20 * 60 * 60 * 1000;
           setTimeout(() => {
             window.location.reload();
           }, ONE_MINUTE);
         });
         
-        // B) Time between each message reveal (2 minutes = 2 * 12 * 500)
+        // B) 2-minute delay
         const TWO_MINUTES = 2 * 12 * 500;
         
         /**
-         * Reveal a single message, then wait 2 frames before scrolling smoothly.
+         * Smoothly animate the container to the far right, so the newest message is visible.
          */
-        function revealMessage(msg) {
-          // Make the message visible
-          msg.style.opacity = 1;
+        function smoothScrollToEnd() {
+          const container = document.getElementById("rotate-container");
+          if (!container) return;
         
-          // Let the browser run layout for 2 frames before we scroll
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              msg.scrollIntoView({ behavior: "smooth", block: "end" });
-            });
-          });
+          // We'll scroll horizontally since you rotate -90deg
+          const start = container.scrollLeft;
+          const end = container.scrollWidth - container.clientWidth; // to right edge
+          const distance = end - start;
+          const duration = 400; // ms
+          const startTime = performance.now();
+        
+          function tick(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            container.scrollLeft = start + distance * progress;
+            if (progress < 1) {
+              requestAnimationFrame(tick);
+            }
+          }
+          requestAnimationFrame(tick);
         }
         
         /**
-         * Reveal all messages in sequence, each 2 minutes apart.
+         * Reveal the message, then animate the container to the bottom (right edge).
+         */
+        function revealMessage(msg) {
+          msg.style.opacity = 1;
+          smoothScrollToEnd(); // no scrollIntoView
+        }
+        
+        /**
+         * Reveal all messages in 2-minute increments
          */
         function startMessageSchedule() {
           const messages = Array.from(document.querySelectorAll(".message"));
@@ -83,18 +101,16 @@
           });
         }
         
-        // C) Wait until all images have loaded, then begin the reveal
+        // C) Wait for images to load, then reveal messages
         document.addEventListener("DOMContentLoaded", function () {
           const imgs = document.querySelectorAll("img");
           let imagesToLoad = imgs.length;
         
-          // No images? Start immediately
           if (imagesToLoad === 0) {
             startMessageSchedule();
             return;
           }
         
-          // Otherwise, wait for each image to finish
           imgs.forEach((img) => {
             if (img.complete) {
               imagesToLoad--;
@@ -115,6 +131,7 @@
           }
         });
         </script>
+        
             
         
           
