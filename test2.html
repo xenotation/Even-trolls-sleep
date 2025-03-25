@@ -31,23 +31,26 @@
       }
     </style>
     <script>
+        /* ---------------------------------------------
+           #1, #2, #3, #4 Implementation (no #5)
+        ---------------------------------------------- */
+        
+        // (A) Reload page after a long delay (unchanged from your code)
         document.addEventListener("DOMContentLoaded", function () {
           // 1 minute in milliseconds
           const ONE_MINUTE = 20 * 60 * 60 * 1000;
-        
           setTimeout(() => {
-            // Reload the page entirely after ONE_MINUTE
             window.location.reload();
           }, ONE_MINUTE);
         });
         
-        // 2-minute delay in milliseconds
+        // (B) Reveal messages one by one without "smooth" scrolling (#2)
+        //    and use explicit horizontal scroll (#1).
         const TWO_MINUTES = 2 * 12 * 500;
         
-        // Called after all images are loaded
         function startMessageSchedule() {
-          // Collect message elements
           const messages = Array.from(document.querySelectorAll(".message"));
+          const container = document.getElementById("rotate-container");
         
           // Hide all messages initially
           messages.forEach((msg) => {
@@ -60,24 +63,30 @@
           messages.forEach((msg) => {
             setTimeout(() => {
               msg.style.opacity = 1;
-              // Smooth scroll to this newly revealed message
-              msg.scrollIntoView({ behavior: "smooth", block: "end" });
+        
+              // #1: Manually scroll horizontally to the end
+              //     (No "smooth" for #2)
+              if (container) {
+                container.scrollLeft = container.scrollWidth;
+              }
+              // #3: If you ever do use scrollIntoView, do it like this:
+              // msg.scrollIntoView({ block: "nearest", inline: "end" });
+              // (But #1 is our main approach)
             }, currentDelay);
             currentDelay += TWO_MINUTES;
           });
         }
         
+        // (C) Wait for images, then start the reveal
         document.addEventListener("DOMContentLoaded", function () {
           const imgs = document.querySelectorAll("img");
           let imagesToLoad = imgs.length;
         
-          // If no images are on the page, just start immediately
           if (imagesToLoad === 0) {
             startMessageSchedule();
             return;
           }
         
-          // Otherwise, wait for each image
           imgs.forEach((img) => {
             if (img.complete) {
               imagesToLoad--;
@@ -85,7 +94,6 @@
                 startMessageSchedule();
               }
             } else {
-              // On load or error, decrement
               img.addEventListener("load", onImgFinish);
               img.addEventListener("error", onImgFinish);
             }
@@ -98,21 +106,18 @@
             }
           }
         
-          // #4: Listen for orientation changes and re-scroll
+          // (D) #4: On orientation change, re-scroll to the "end"
           window.addEventListener("orientationchange", () => {
-            // Small delay to let the layout reflow
             setTimeout(() => {
               const container = document.getElementById("rotate-container");
               if (container) {
-                // Scroll all the way to the "end" horizontally
                 container.scrollLeft = container.scrollWidth;
               }
             }, 50);
           });
         });
         </script>
-        
-      
+          
       
         
   </head>
