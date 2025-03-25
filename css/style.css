@@ -7,6 +7,18 @@ overflow: hidden;
 strong {
     font-weight: 700;
 }
+
+#rotate-container {
+    transform: rotate(-90deg) translate(-100%, 0);
+    transform-origin: top left;
+    width: 100vh;
+    height: 100vw;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+  }
+  
+  
 code, kbd, pre, samp {
     font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
 }
