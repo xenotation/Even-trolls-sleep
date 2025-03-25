@@ -31,35 +31,12 @@
       }
     </style>
     <script>
-        /* ---------------------------------------------
-           Combined script with #1, #2, #3, and #4,
-           ensuring last message is fully visible.
-        ---------------------------------------------- */
-        
-        // (A) Reload page after a long delay (unchanged from your code)
-        document.addEventListener("DOMContentLoaded", function () {
-          // 1 minute in milliseconds
-          const ONE_MINUTE = 20 * 60 * 60 * 1000;
-          setTimeout(() => {
-            window.location.reload();
-          }, ONE_MINUTE);
-        });
-        
-        // (B) We'll reveal messages one by one and
-        //     explicitly scroll to the right edge so
-        //     the last message is never cut off.
+        // 2-minute delay in milliseconds
         const TWO_MINUTES = 2 * 12 * 500;
         
-        /** Scroll to the far-right edge so the last message is fully visible */
-        function scrollToEnd() {
-          const container = document.getElementById("rotate-container");
-          if (!container) return;
-          // This ensures we don't overshoot so the last message isn't offscreen:
-          container.scrollLeft = container.scrollWidth - container.clientWidth;
-        }
-        
-        /** Reveal messages in sequence */
+        // Called after all images are loaded
         function startMessageSchedule() {
+          // Collect message elements
           const messages = Array.from(document.querySelectorAll(".message"));
         
           // Hide all messages initially
@@ -68,25 +45,37 @@
             msg.style.transition = "opacity 0.5s ease-in";
           });
         
-          // Reveal them one by one
+          // Reveal them in sequence
           let currentDelay = 0;
           messages.forEach((msg) => {
             setTimeout(() => {
+              // Fade in the message
               msg.style.opacity = 1;
-              // #1 & #2: No "smooth" scrolling; just manually jump right
-              scrollToEnd();
         
-              // #3 (Optional): If you still want to call scrollIntoView,
-              // you can do it with inline:'end', block:'nearest'. For example:
-              // msg.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'end' });
-              // But the scrollToEnd() approach above is usually more reliable on iPhone.
+              // First scroll attempt
+              msg.scrollIntoView({ behavior: "smooth", block: "end" });
+        
+              // Force reflow so Safari re-checks layout
+              msg.getBoundingClientRect();
+        
+              // Second scroll attempt after short delay
+              setTimeout(() => {
+                msg.scrollIntoView({ behavior: "smooth", block: "end" });
+              }, 50);
+        
             }, currentDelay);
             currentDelay += TWO_MINUTES;
           });
         }
         
-        // (C) Wait for images, then begin the reveal
         document.addEventListener("DOMContentLoaded", function () {
+          // If you want the 20-hour reload, keep that:
+          const ONE_MINUTE = 20 * 60 * 60 * 1000;
+          setTimeout(() => {
+            window.location.reload();
+          }, ONE_MINUTE);
+        
+          // Wait for images to load, then start
           const imgs = document.querySelectorAll("img");
           let imagesToLoad = imgs.length;
         
@@ -113,15 +102,9 @@
               startMessageSchedule();
             }
           }
-        
-          // (D) #4: On orientation change, re-scroll to the right edge
-          window.addEventListener("orientationchange", () => {
-            setTimeout(() => {
-              scrollToEnd();
-            }, 50);
-          });
         });
         </script>
+        
         
           
       
